@@ -1,0 +1,38 @@
+[package]
+name = "audiomixer"
+version = "0.0.0"
+description = "A Mixer App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1", features = [] }
+
+[dependencies]
+tauri = { version = "1", features = [ "path-all", "fs-all", "window-set-always-on-top", "window-set-size", "window-center", "window-set-focus", "window-show", "window-set-skip-taskbar", "window-set-position", "window-hide", "system-tray", "notification-all", "global-shortcut-all", "shell-open"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+window-vibrancy = "0.4.0"
+tauri-plugin-positioner = { version = "1.0", features = ["system-tray"] }
+window-shadows = "0.2.2"
+winapi = { version = "0.3.9", features = ["winuser"] }
+
+windows-volume-control = "0.1.1"
+windows = { version = "0.44.0", features = [
+    "implement",
+    "Win32_Media_Audio",
+    "Win32_System_Com",
+    "Win32_Media_Audio_Endpoints",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_Devices_FunctionDiscovery",
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_System_ProcessStatus"
+] }
+
+[features]
+# This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
