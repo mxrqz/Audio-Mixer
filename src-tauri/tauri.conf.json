@@ -6,8 +6,8 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "windowsaudiocontroll",
-    "version": "0.0.0"
+    "productName": "audiomixer",
+    "version": "1.0.0"
   },
   "tauri": {
     "allowlist": {
