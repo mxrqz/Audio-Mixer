@@ -4,7 +4,7 @@ import { Slider } from "./components/ui/slider";
 import { Slider2 } from "./components/ui/slider2";
 import { appWindow, LogicalPosition, LogicalSize, primaryMonitor } from "@tauri-apps/api/window";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faVolumeOff, faVolumeLow, faVolumeHigh, faCheck, faVolumeXmark } from '@fortawesome/free-solid-svg-icons'
+import { faVolumeLow, faVolumeHigh, faCheck, faVolumeXmark } from '@fortawesome/free-solid-svg-icons'
 import { register } from '@tauri-apps/api/globalShortcut';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { writeTextFile, BaseDirectory, exists, readTextFile } from '@tauri-apps/api/fs';
