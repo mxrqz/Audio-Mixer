@@ -4,7 +4,7 @@ import { Slider } from "./components/ui/slider";
 import { Slider2 } from "./components/ui/slider2";
 import { appWindow, LogicalPosition, LogicalSize, primaryMonitor } from "@tauri-apps/api/window";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faVolumeOff, faVolumeLow, faVolumeHigh, faCheck } from '@fortawesome/free-solid-svg-icons'
+import { faVolumeOff, faVolumeLow, faVolumeHigh, faCheck, faVolumeXmark } from '@fortawesome/free-solid-svg-icons'
 import { register } from '@tauri-apps/api/globalShortcut';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { writeTextFile, BaseDirectory, exists, readTextFile } from '@tauri-apps/api/fs';
@@ -16,6 +16,7 @@ import { ScrollArea } from "./components/ui/scroll-area";
 interface AppsInfo {
   name: string;
   volume: number;
+  mutado: boolean;
 }
 
 interface Keybinds {
@@ -47,12 +48,16 @@ export default function App() {
   const getApps = async () => {
     const apps = await invoke('get_apps')
       .then((response: any) => {
-        const sessions: AppsInfo[] = JSON.parse(response);
+        const sessions: AppsInfo[] = JSON.parse(response).map((app: any) => ({
+          name: app.name,
+          volume: app.volume,
+          mutado: false
+        }));
         setApps(sessions);
-        return sessions
+        return sessions;
       });
 
-    return apps
+    return apps;
   };
 
   const handleSelectedApp = (app: string) => {
@@ -275,7 +280,7 @@ export default function App() {
   // timeoutId = undefined;
 
   const sliderValue = async (app: String, value: number[], timerDuration: number) => {
-    invoke('set_app_volume', { appName: app, volume: parseFloat(value.toString()) })
+    await invoke('set_app_volume', { appName: app, volume: parseFloat(value.toString()) })
     updateAppVolume(app, parseFloat(value.toString()))
     await timer(timerDuration);
   }
@@ -291,12 +296,22 @@ export default function App() {
 
   const getVolumeIcon = (volume: number) => {
     if (volume >= 0.5) {
-      return <FontAwesomeIcon icon={faVolumeHigh} />
+      return <FontAwesomeIcon icon={faVolumeHigh} onClick={() => mute()} />
     } else if (volume < 0.5 && volume > 0) {
-      return <FontAwesomeIcon icon={faVolumeLow} />
+      return <FontAwesomeIcon icon={faVolumeLow} onClick={() => mute()} />
     } else if (volume === 0) {
-      return <FontAwesomeIcon icon={faVolumeOff} />
+      return <FontAwesomeIcon icon={faVolumeXmark} onClick={() => mute()} />
     }
+  };
+
+  const mute = async () => {
+    setApps(prevApps => prevApps.map(app => {
+      if (app.name === toggleDefault) {
+        return { ...app, volume: 0, };
+      }
+      return app;
+    }));
+    await invoke('set_app_volume', { appName: toggleDefault, volume: 0 })
   };
 
   const getSlider = () => {
