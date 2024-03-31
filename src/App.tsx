@@ -61,18 +61,6 @@ export default function App() {
   }
 
   const shortcutsKeybinds = [
-    // {
-    //   "name": "Master",
-    //   "command": "CommandOrControl+Shift+F6"
-    // },
-    // {
-    //   "name": "Chrome",
-    //   "command": "CommandOrControl+Shift+F7"
-    // },
-    // {
-    //   "name": "Discord",
-    //   "command": "CommandOrControl+Shift+F8"
-    // },
     {
       "name": "VolumeUp",
       "command": "CommandOrControl+F9"
@@ -335,7 +323,6 @@ export default function App() {
   }, [keybinds, fetchKeybinds]);
 
   //fazer a função de mutar o app e salvar o volume anterior para qndo desmutar voltar no valor antigo
-  //fazer icones para os atalhos
 
   return (
     <>
