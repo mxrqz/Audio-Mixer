@@ -4,19 +4,18 @@ import { Slider } from "./components/ui/slider";
 import { Slider2 } from "./components/ui/slider2";
 import { appWindow, LogicalPosition, LogicalSize, primaryMonitor } from "@tauri-apps/api/window";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faVolumeLow, faVolumeHigh, faCheck, faVolumeXmark } from '@fortawesome/free-solid-svg-icons'
+import { faVolumeLow, faVolumeHigh, faCheck, faVolumeXmark, faGear } from '@fortawesome/free-solid-svg-icons'
 import { register } from '@tauri-apps/api/globalShortcut';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { writeTextFile, BaseDirectory, exists, readTextFile } from '@tauri-apps/api/fs';
 import { listen } from '@tauri-apps/api/event'
 import { ScrollArea } from "./components/ui/scroll-area";
-
-//fazer icone e função de mutar o audio faXMark
+import { Separator } from "./components/ui/separator";
 
 interface AppsInfo {
   name: string;
   volume: number;
-  mutado: boolean;
+  muted: boolean;
 }
 
 interface Keybinds {
@@ -48,11 +47,7 @@ export default function App() {
   const getApps = async () => {
     const apps = await invoke('get_apps')
       .then((response: any) => {
-        const sessions: AppsInfo[] = JSON.parse(response).map((app: any) => ({
-          name: app.name,
-          volume: app.volume,
-          mutado: false
-        }));
+        const sessions: AppsInfo[] = JSON.parse(response)
         setApps(sessions);
         return sessions;
       });
@@ -203,6 +198,17 @@ export default function App() {
     // const volume = -0.02;
     const apps = await getApps()
     const app = apps.filter(app => app.name == selectedApp.current)
+
+    if (app[0].muted === true) {
+      setApps(prevApps => prevApps.map(app => {
+        if (app.name === selectedApp.current) {
+          return { ...app, muted: false };
+        }
+        return app;
+      }));
+      await invoke('set_app_mute', { appName: app[0].name })
+    }
+
     await invoke('volume', { appName: app[0].name, volume });
 
     if (await appWindow.isVisible() === false) {
@@ -280,6 +286,15 @@ export default function App() {
   // timeoutId = undefined;
 
   const sliderValue = async (app: String, value: number[], timerDuration: number) => {
+    if (apps.find(appF => appF.name === app)?.muted === true) {
+      setApps(prevApps => prevApps.map(app => {
+        if (app.name === toggleDefault) {
+          return { ...app, muted: false };
+        }
+        return app;
+      }));
+      await invoke('set_app_mute', { appName: app })
+    }
     await invoke('set_app_volume', { appName: app, volume: parseFloat(value.toString()) })
     updateAppVolume(app, parseFloat(value.toString()))
     await timer(timerDuration);
@@ -294,24 +309,56 @@ export default function App() {
     }));
   };
 
-  const getVolumeIcon = (volume: number) => {
-    if (volume >= 0.5) {
-      return <FontAwesomeIcon icon={faVolumeHigh} onClick={() => mute()} />
+  const getVolumeIcon = (volume: number, appName?: string) => {
+    if (apps.find(app => app.name === appName)?.muted === true || apps.find(app => app.name === toggleDefault)?.muted === true) {
+      return <FontAwesomeIcon icon={faVolumeXmark} />
+    } else if (volume >= 0.5) {
+      return <FontAwesomeIcon icon={faVolumeHigh} />
     } else if (volume < 0.5 && volume > 0) {
-      return <FontAwesomeIcon icon={faVolumeLow} onClick={() => mute()} />
+      return <FontAwesomeIcon icon={faVolumeLow} />
     } else if (volume === 0) {
-      return <FontAwesomeIcon icon={faVolumeXmark} onClick={() => mute()} />
+      return <FontAwesomeIcon icon={faVolumeXmark} />
     }
   };
 
-  const mute = async () => {
-    setApps(prevApps => prevApps.map(app => {
-      if (app.name === toggleDefault) {
-        return { ...app, volume: 0, };
+  const mute = async (appName?: string) => {
+    if (appName) {
+      if (apps.find(app => app.name === appName)?.muted === false) {
+        setApps(prevApps => prevApps.map(app => {
+          if (app.name === appName) {
+            return { ...app, muted: true };
+          }
+          return app;
+        }));
+      } else {
+        setApps(prevApps => prevApps.map(app => {
+          if (app.name === appName) {
+            return { ...app, muted: false };
+          }
+          return app;
+        }));
       }
-      return app;
-    }));
-    await invoke('set_app_volume', { appName: toggleDefault, volume: 0 })
+
+      await invoke('set_app_mute', { appName })
+    } else {
+      if (apps.find(app => app.name === toggleDefault)?.muted === false) {
+        setApps(prevApps => prevApps.map(app => {
+          if (app.name === toggleDefault) {
+            return { ...app, muted: true };
+          }
+          return app;
+        }));
+      } else {
+        setApps(prevApps => prevApps.map(app => {
+          if (app.name === toggleDefault) {
+            return { ...app, muted: false };
+          }
+          return app;
+        }));
+      }
+
+      await invoke('set_app_mute', { appName: toggleDefault })
+    }
   };
 
   const getSlider = () => {
@@ -337,7 +384,11 @@ export default function App() {
     shortcuts();
   }, [keybinds, fetchKeybinds]);
 
-  //fazer a função de mutar o app e salvar o volume anterior para qndo desmutar voltar no valor antigo
+  const config = async () => {
+    console.log('config');
+    await appWindow.hide();
+    await invoke('config_page');
+  }
 
   return (
     <>
@@ -350,9 +401,12 @@ export default function App() {
           <div className="w-full h-full relative">
             <div className={`absolute w-full h-full flex items-center justify-center ${animationTop}`}>
               <div className="w-full px-3 gap-1 grid grid-cols-[25px,1fr,25px] items-center justify-between text-center relative">
-                {getVolumeIcon(getSlider())}
-                <Slider2 max={1} step={0.01}
-                  value={[getSlider()]}
+                <span className="hover:bg-primary/50 w-full h-full rounded-sm">
+                  {getVolumeIcon(getSlider())}
+                </span>
+                <Slider2 max={1}
+                  value={[getSlider()]} step={0.01}
+                  onValueChange={async (value) => await sliderValue(toggleDefault, value, 2500)}
                 />
                 <span>{(getSlider() * 100).toFixed(0)}</span>
               </div>
@@ -362,7 +416,11 @@ export default function App() {
 
             <div className={`absolute w-full h-full flex items-center justify-center ${animationMiddle}`}>
               <div className="w-full px-3 gap-1 grid grid-cols-[25px,1fr,25px] items-center justify-between text-center relative">
-                {getVolumeIcon(getSlider())}
+                <span className="hover:bg-primary/50 w-full h-full rounded-sm"
+                  onClick={() => mute()}
+                >
+                  {getVolumeIcon(getSlider())}
+                </span>
                 <Slider2 max={1}
                   value={[getSlider()]} step={0.01}
                   onValueChange={async (value) => await sliderValue(toggleDefault, value, 2500)}
@@ -375,9 +433,12 @@ export default function App() {
 
             <div className={`absolute w-full h-full flex items-center justify-center ${animationBottom}`}>
               <div className="w-full px-3 gap-1 grid grid-cols-[25px,1fr,25px] items-center justify-between text-center relative">
-                {getVolumeIcon(getSlider())}
+                <span className="hover:bg-primary/50 w-full h-full rounded-sm">
+                  {getVolumeIcon(getSlider())}
+                </span>
                 <Slider2 max={1}
                   value={[getSlider()]} step={0.01}
+                  onValueChange={async (value) => await sliderValue(toggleDefault, value, 2500)}
                 />
                 <span>{(getSlider() * 100).toFixed(0)}</span>
               </div>
@@ -390,51 +451,65 @@ export default function App() {
           <div id="noise" className="absolute left-0 top-0 w-full h-full"></div>
         </div>
       ) : (
-        <ScrollArea className="h-full w-full">
-          <div className="w-full">
 
-            <ToggleGroup type="single" className="flex flex-col gap-2 w-full text-white"
-              value={toggleDefault} onValueChange={
-                (value: string) => handleSelectedApp(value)
-              }>
+        <>
+          <div className="w-full h-fit flex flex-col px-5 pt-1 gap-1 justify-end items-end text-white mb-2">
+            <FontAwesomeIcon icon={faGear} className="text-xl p-2 hover:bg-[#3b3b3b]/80 rounded-md"
+              onClick={() => config()}
+            />
 
-              {[
-                ...apps.filter(app => app.name === "master"),
-                ...apps.filter(app => app.name !== "master").sort((a, b) => a.name.localeCompare(b.name))
-              ].map((app, index) => (
-                <section key={index} className="flex gap-5 items-center justify-between rounded-lg bg-primary/20 border border-[#3b3b3b] hover:bg-primary/30 w-full py-2">
-                  <div className="grid grid-cols-[35px,35px,125px] items-center gap-2 w-full pl-5"
-                    onClick={() => handleSelectedApp(app.name)}
-                  >
-                    <ToggleGroupItem value={app.name} className="border border-primary/30 ">
-                      <FontAwesomeIcon icon={faCheck} />
-                    </ToggleGroupItem>
+            <Separator className="bg-white/10" />
+          </div>
 
-                    <div className="flex justify-center">
+          <ScrollArea className="h-full w-full px-5">
+            <div className="w-full">
+
+              <ToggleGroup type="single" className="flex flex-col gap-2 w-full text-white"
+                value={toggleDefault} onValueChange={
+                  (value: string) => handleSelectedApp(value)
+                }>
+
+                {[
+                  ...apps.filter(app => app.name === "master"),
+                  ...apps.filter(app => app.name !== "master").sort((a, b) => a.name.localeCompare(b.name))
+                ].map((app, index) => (
+                  <section key={index} className="flex gap-5 items-center justify-between rounded-lg bg-[#3b3b3b]/60 border border-[#3b3b3b] hover:bg-[#3b3b3b]/30 w-full py-2">
+                    <div className="grid grid-cols-[35px,35px,125px] items-center gap-2 w-full pl-5"
+                      onClick={() => handleSelectedApp(app.name)}
+                    >
+                      <ToggleGroupItem value={app.name} className="border border-[#585858] ">
+                        <FontAwesomeIcon icon={faCheck} />
+                      </ToggleGroupItem>
+
+                      {/* <div className="flex justify-center">
                       <img src={`https://raw.githubusercontent.com/mxrqz/icons/main/${app.name.toLowerCase()}.png`}
                         alt={`${app.name} icon`} className="w-3/4 rounded-md"
                       />
+                    </div> */}
+
+                      <span>{app.name.slice(0, 1).toUpperCase()}{app.name.slice(1)}</span>
                     </div>
 
+                    <div className="w-2/3 h-full grid grid-cols-[25px,25px,1fr] gap-4 pr-5 items-center justify-center text-end">
+                      <span className="hover:bg-primary/50 w-full h-full rounded-sm grid place-items-center"
+                        onClick={() => mute(app.name)}
+                      >
+                        {getVolumeIcon(app.volume, app.name)}
+                      </span>
+                      <span>{(app.volume * 100).toFixed(0)}</span>
+                      <Slider max={1} defaultValue={[app.volume]} value={[app.volume]} step={0.01} onValueChange={async (value) => { sliderValue(app.name, value, 2500); stayVisible.current = true }} />
+                    </div>
 
-                    <span>{app.name.slice(0, 1).toUpperCase()}{app.name.slice(1)}</span>
-                  </div>
+                  </section>
+                ))}
 
-                  <div className="w-2/3 h-full grid grid-cols-[15px,25px,1fr] gap-4 pr-5 items-center text-end">
-                    {getVolumeIcon(app.volume)}
-                    <span>{(app.volume * 100).toFixed(0)}</span>
-                    <Slider max={1} defaultValue={[app.volume]} value={[app.volume]} step={0.01} onValueChange={async (value) => { sliderValue(app.name, value, 2500); stayVisible.current = true }} />
-                  </div>
+              </ToggleGroup>
 
-                </section>
-              ))}
+            </div >
+          </ScrollArea>
 
-            </ToggleGroup>
-
-
-            <div id="noise" className="absolute left-0 top-0 w-full h-full"></div>
-          </div >
-        </ScrollArea >
+          <div id="noise" className="absolute left-0 top-0 w-full h-full"></div>
+        </>
       )
       }
     </>

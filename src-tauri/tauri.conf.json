@@ -30,7 +30,8 @@
         "setSkipTaskbar": true,
         "show": true,
         "setSize": true,
-        "setAlwaysOnTop": true
+        "setAlwaysOnTop": true,
+        "create": true
       },
       "fs": {
         "all": true,

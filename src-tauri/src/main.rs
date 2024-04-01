@@ -5,8 +5,7 @@ use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 use tauri_plugin_positioner::{Position, WindowExt};
-use winapi::um::winuser::GetKeyState;
-use winapi::um::winuser::VK_RIGHT;
+use winapi::um::winuser::{GetKeyState, VK_RIGHT};
 use window_shadows::set_shadow;
 use window_vibrancy::apply_acrylic;
 use windows_volume_control::AudioController;
@@ -15,6 +14,7 @@ use windows_volume_control::AudioController;
 struct SessionInfo {
     name: String,
     volume: f32,
+    muted: bool,
 }
 
 #[tauri::command]
@@ -30,13 +30,14 @@ fn get_apps() -> String {
             controller.GetDefaultAudioEnpointVolumeControl();
             controller.GetAllProcessSessions();
             let test: Vec<String> = controller.get_all_session_names();
-            // println!("{:?}", test);
             for session_name in test {
                 if let Some(session) = controller.get_session_by_name(session_name.clone()) {
                     let volume = session.getVolume();
+                    let muted = session.getMute();
                     session_infos.push(SessionInfo {
                         name: session_name,
                         volume,
+                        muted,
                     });
                 } else {
                     println!("Sessão {} não encontrada.", session_name);
@@ -48,6 +49,34 @@ fn get_apps() -> String {
 
     let session_infos = rx.recv().unwrap();
     serde_json::to_string(&session_infos).unwrap()
+}
+
+#[tauri::command]
+fn set_app_mute(app_name: String) {
+    thread::spawn(move || {
+        let app_name_clone = app_name.clone();
+        unsafe {
+            let mut controller = AudioController::init(None);
+            controller.GetSessions();
+            controller.GetDefaultAudioEnpointVolumeControl();
+            controller.GetAllProcessSessions();
+
+            // println!("Aplicativo {} - volume {}.", app_name_clone, volume)
+            if let Some(app) = controller.get_session_by_name(app_name) {
+                let app_mute = app.getMute();
+
+                if app_mute == false {
+                    app.setMute(true)
+                } else {
+                    app.setMute(false)
+                }
+
+                // app.setMute(true);
+            } else {
+                println!("Aplicativo {} não encontrado.", app_name_clone);
+            }
+        }
+    });
 }
 
 #[tauri::command]
@@ -115,19 +144,30 @@ fn get_key_state(app_handle: AppHandle, app_name: String, app_volume: f32) -> bo
     }
 }
 
+#[tauri::command]
+async fn config_page(window: tauri::Window) {
+    // tauri_plugin_positioner::on_tray_event(app, &event);
+    let controls_window = window.get_window("controls").unwrap();
+    controls_window.set_focus().unwrap();
+    controls_window.set_skip_taskbar(true).unwrap();
+    let _ = controls_window.move_window(Position::BottomRight);
+    controls_window.show().unwrap();
+}
+
 fn main() {
-    let quit = CustomMenuItem::new("quit".to_string(), "Quit").accelerator("CommandOrControl+Q");
-    let keybinds = CustomMenuItem::new("keybinds".to_string(), "Change Keybinds")
-        .accelerator("CommandOrControl+K");
-    let tray_menu = SystemTrayMenu::new().add_item(quit).add_item(keybinds);
+    let quit = CustomMenuItem::new("quit", "Quit");
+    let keybinds = CustomMenuItem::new("keybinds", "Change Keybinds");
+    let tray_menu = SystemTrayMenu::new().add_item(keybinds).add_item(quit);
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_positioner::init())
+        .plugin(tauri_plugin_positioner::init())   
         .invoke_handler(tauri::generate_handler![
             get_apps,
             set_app_volume,
             volume,
-            get_key_state
+            get_key_state,
+            set_app_mute,
+            config_page
         ])
         .setup(|app| {
             let main_window = app.get_window("main").unwrap();

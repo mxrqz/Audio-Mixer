@@ -142,14 +142,14 @@ export default function Control() {
 
                 <div className="flex flex-col gap-2">
                     {keybinds.map((keybind, index) => (
-                        <div key={index} className="bg-primary/20 border border-[#3b3b3b] hover:bg-primary/30 rounded-lg py-2 px-4 flex justify-between text-center items-center">
+                        <div key={index} className="bg-[#3b3b3b]/60 border border-[#3b3b3b] hover:bg-[#3b3b3b]/30 rounded-lg py-2 px-4 flex justify-between text-center items-center">
                             <div className="flex gap-2 items-center">
                                 {getIcon(keybind.name)}
                                 <span>{keybind.name}</span>
                             </div>
 
                             <div className="flex items-center relative">
-                                <Input className={`bg-zinc-700 rounded-md py-1 px-2  no-underline w-full
+                                <Input className={`bg-[#3b3b3b]/60 rounded-md py-1 px-2  no-underline w-full
                                     focus-visible:ring-0 focus-visible:animate-pulse focus-visible:border-red-500
                                 `}
                                     onClick={() => setInputClickedIndex(index)}
