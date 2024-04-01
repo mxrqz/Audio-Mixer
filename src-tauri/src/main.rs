@@ -187,9 +187,9 @@ fn main() {
         })
         .system_tray(
             SystemTray::new()
-                .with_id("AudioControler")
+                .with_id("AudioMixer")
                 .with_menu(tray_menu)
-                .with_tooltip("Audio Controller"),
+                .with_tooltip("Audio Mixer"),
         )
         .on_system_tray_event(|app, event| {
             tauri_plugin_positioner::on_tray_event(app, &event);
