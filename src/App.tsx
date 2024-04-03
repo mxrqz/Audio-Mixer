@@ -217,7 +217,7 @@ export default function App() {
       setVolume(true);
       await appWindow.setSkipTaskbar(true)
       await appWindow.show()
-      await appWindow.setFocus()
+      // await appWindow.setFocus()
     }
 
     await getApps()
@@ -259,7 +259,7 @@ export default function App() {
       setVolume(true);
       await appWindow.setSkipTaskbar(true)
       await appWindow.show()
-      await appWindow.setFocus()
+      // await appWindow.setFocus()
     }
     await timer(timerDuration)
   }
