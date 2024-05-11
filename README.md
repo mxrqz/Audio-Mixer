@@ -1,7 +1,12 @@
-# Simple Audio Mixer
+# AudioMixer
 
-Audio Mixer é uma ferramenta simples e eficaz projetada para simplificar o controle de volume das aplicações abertas no Windows. Com o Audio Mixer, você pode facilmente ajustar o volume de cada aplicativo individualmente, tornando mais conveniente gerenciar o áudio em seu sistema. Além disso, você pode adicionar atalhos personalizados para aumentar, diminuir ou trocar rapidamente entre as aplicações ativas, proporcionando uma experiência de áudio mais fluida e personalizada.
+Um projeto simples de um Audio Mixer para Windows, Feito para simplificar o controle dos volumes das aplicações reproduzindo áudio no momento.
 
-## Recommended IDE Setup
+## Funcionamento
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+### Controlar volumes
+Para aumentar ou diminuir o volume, utilize os atalhos correspondentes. O aplicativo permite controlar uma aplicação por vez; para mudar de aplicação, pressione o atalho correspondente a Switch App Up ou Switch App Down. Os atalhos podem ser configurados para outras combinações de teclas.
+
+***Observação: Evite configurar atalhos e teclas que já possuam funções dentro do Windows. Esses atalhos podem deixar de funcionar para dar lugar às funcionalidades específicas deste aplicativo. Certifique-se de usar apenas atalhos únicos e exclusivos dentro do aplicativo para evitar conflitos e garantir o seu funcionamento correto.***
+
+![volume](audiomixer01.png) ![shortcuts](audiomixer02.png)
