@@ -39,6 +39,7 @@ fn get_apps() -> String {
                         volume,
                         muted,
                     });
+                    
                 } else {
                     println!("Sessão {} não encontrada.", session_name);
                 }
